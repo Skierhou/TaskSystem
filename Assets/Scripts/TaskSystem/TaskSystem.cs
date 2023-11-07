@@ -84,7 +84,8 @@ namespace SkierFramework
                     foreach (var data in taskSystemData.taskDatas)
                     {
                         var task = new Task(data, ConfigManager.Instance.GetConfig<TaskConfig>(data.taskId));
-                        InnerAddTask(task);
+                        InnerAddTask(task, false);
+                        OnTaskRefresh?.Invoke(task.taskId, TaskProgress.Start);
                     }
                 }
                 _taskSystemData = taskSystemData;
@@ -211,20 +212,22 @@ namespace SkierFramework
             return false;
         }
 
-        private void InnerAddTask(Task task)
+        private void InnerAddTask(Task task, bool addTaskData = true)
         {
             if (_tasks.ContainsKey(task.taskId)) return;
 
             task.OnTaskRefresh += (id, progress) => { OnTaskRefresh?.Invoke(id, progress); };
             _tasks.Add(task.taskId, task);
-            _taskSystemData.taskDatas.Add(task.taskData);
+            if (addTaskData && !_taskSystemData.taskDatas.Contains(task.taskData))
+            {
+                _taskSystemData.taskDatas.Add(task.taskData);
+            }
 
             foreach (var taskCondition in task.TaskConfig.taskConditions)
             {
                 GetCounter(taskCondition.counterType).AddTask(task);
             }
         }
-
         /// <summary>
         /// 移除一个任务
         /// </summary>
